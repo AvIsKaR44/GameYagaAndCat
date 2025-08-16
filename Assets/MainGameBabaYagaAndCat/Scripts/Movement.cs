@@ -1,19 +1,37 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(AudioSource))]
 public class Movement : MonoBehaviour
 {   
-    [SerializeField] InputAction thrust;
-    [SerializeField] InputAction rotation;
-    [SerializeField] float thrustStrength = 100f;
-    [SerializeField] float rotationStrength = 100f;
-    [SerializeField] AudioClip mainEngineSFX;
-    [SerializeField] ParticleSystem mainEngineParticles;
-    [SerializeField] ParticleSystem rightThrustParticles;
-    [SerializeField] ParticleSystem leftThrustParticles;
+    [SerializeField, Tooltip("Action to activate the thrust")]
+    private InputAction thrust;
 
-    Rigidbody rb;
-    AudioSource audioSource;
+    [SerializeField, Tooltip("Action for rotation")]
+    private InputAction rotation;
+
+    [SerializeField, Tooltip("Engine thrust force")]
+    private float thrustStrength = 100f;
+
+    [SerializeField, Tooltip("Rotation force")]
+    private float rotationStrength = 100f;
+
+    [SerializeField, Tooltip("Engine sound")]
+    private AudioClip mainEngineSFX;
+
+    [SerializeField, Tooltip("Main Engine Particle Effect")]
+    private ParticleSystem mainEngineParticles;
+
+    [SerializeField, Tooltip("Right Engine Particle Effect")]
+    private ParticleSystem rightThrustParticles;
+
+    [SerializeField, Tooltip("Left Engine Particle Effect")]
+    private ParticleSystem leftThrustParticles;
+
+
+    private Rigidbody rb;
+    private AudioSource audioSource;
 
     private void Start() 
     {
@@ -48,11 +66,11 @@ public class Movement : MonoBehaviour
     private void StartThrusting()
     {
         rb.AddRelativeForce(Vector3.up * thrustStrength * Time.fixedDeltaTime);
-        if (!audioSource.isPlaying)
+        if (audioSource != null && !audioSource.isPlaying)
         {
             audioSource.PlayOneShot(mainEngineSFX);
         }
-        if (!mainEngineParticles.isPlaying)
+        if (mainEngineParticles != null && !mainEngineParticles.isPlaying)
         {
             mainEngineParticles.Play();
         }
@@ -67,17 +85,17 @@ public class Movement : MonoBehaviour
     private void ProcessRotation()
     {
         float rotationInput = rotation.ReadValue<float>();
-        if(rotationInput < 0)
+        if(Mathf.Approximately(rotationInput, 0))
         {
-            RotateRight();
+            StopRotating();
         }
         else if(rotationInput > 0)
         {
-            RotateLeft();
+            RotateLeft();                        
         }
         else
         {
-            StopRotating();
+            RotateRight();
         }
     }
 

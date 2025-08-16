@@ -1,23 +1,24 @@
 using UnityEngine;
 
+[RequireComponent(typeof(AudioSource))]
 public class Apple : MonoBehaviour
 {
-    [SerializeField] ParticleSystem wowEffect;
-    [SerializeField] GameObject apple;
+    [SerializeField] private ParticleSystem wowEffect;
+    [SerializeField] private GameObject apple;
 
-    [SerializeField] AudioClip appleSFX;
+    [SerializeField] private AudioClip appleSFX;
 
-    GameObject appleBox = null;
-    AudioSource audioSource;
+    public GameObject appleBox = null;
+    public AudioSource audioSource;
 
     private void Start() 
     {
         audioSource = GetComponent<AudioSource>();    
     }
 
-    void OnTriggerEnter(Collider other)
+    private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.tag == "Player" && !appleBox)
+        if (other.gameObject.CompareTag("Player") && appleBox == null)
         {
             apple.SetActive(false);
             if (!wowEffect.isPlaying) wowEffect.Play();
@@ -26,9 +27,9 @@ public class Apple : MonoBehaviour
         }
     }
 
-    void Update()
+    private void Update()
     {
-        if (appleBox && !wowEffect.isPlaying && !audioSource.isPlaying)
+        if (appleBox != null && !wowEffect.isPlaying && !audioSource.isPlaying)
         {
             Destroy(appleBox);
         }

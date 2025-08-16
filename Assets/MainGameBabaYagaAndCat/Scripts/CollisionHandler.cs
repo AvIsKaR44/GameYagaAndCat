@@ -1,20 +1,31 @@
-using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
+
+[RequireComponent(typeof(AudioSource))]
+[RequireComponent(typeof(Movement))]
 public class CollisionHandler : MonoBehaviour
 {   
-    [SerializeField] float levelLoadDelay = 2f;
-    [SerializeField] AudioClip successSFX;
-    [SerializeField] AudioClip crashSFX;
-    [SerializeField] ParticleSystem successParticles;
-    [SerializeField] ParticleSystem crashParticles;
-    
-    AudioSource audioSource;
+    [SerializeField, Tooltip("Delay before loading next level")]
+    private float levelLoadDelay = 2f;
 
-    bool isControllable = true;
-    bool isCollidable = true;
+    [SerializeField, Tooltip("Sound played on success")]
+    private AudioClip successSFX;
+
+    [SerializeField, Tooltip("Sound played on crash")]
+    private AudioClip crashSFX;
+
+    [SerializeField, Tooltip("Particles played on success")]
+    private ParticleSystem successParticles;
+
+    [SerializeField, Tooltip("Particles played on crash")]
+    private ParticleSystem crashParticles;
+    
+    private AudioSource audioSource;
+
+    private bool isControllable = true;
+    private bool isCollidable = true;
 
     private void Start() 
     {
@@ -26,7 +37,7 @@ public class CollisionHandler : MonoBehaviour
         RespondToDebugKeys();        
     }
 
-    void RespondToDebugKeys()
+    private void RespondToDebugKeys()
     {
         if (Keyboard.current.lKey.wasPressedThisFrame)
         {
@@ -40,43 +51,47 @@ public class CollisionHandler : MonoBehaviour
 
     private void OnCollisionEnter(Collision other) 
     {
-        if (!isControllable || !isCollidable) { return; }
+        if (!isControllable || !isCollidable)  return;
         
-        switch (other.gameObject.tag)
+        if (other.gameObject.CompareTag("Finish"))
         {
-            case "Neutral":
-                // Debug.Log("Everything is looking good!");
-                break;
-            case "Finish":
-                StartSuccessSequence();
-                break;
-            default:
-                StartCrashSequence();
-                break;
+            StartSuccessSequence();
+        }
+        else if(!other.gameObject.CompareTag("Neutral"))
+        {
+            StartCrashSequence();
         }
     }
 
-    void StartSuccessSequence()
+    private void StartSuccessSequence()
     {
         isControllable = false;
-        audioSource.Stop();
-        audioSource.PlayOneShot(successSFX);
-        successParticles.Play();
+        if (audioSource != null)
+        {
+            audioSource.Stop();
+            audioSource.PlayOneShot(successSFX);
+        }
+        if(successParticles != null) successParticles.Play();
+
         GetComponent<Movement>().enabled = false;
-        Invoke("LoadNextLevel", levelLoadDelay);
+        Invoke(nameof(LoadNextLevel), levelLoadDelay);
     }
 
-    void StartCrashSequence()
+    private void StartCrashSequence()
     {
         isControllable = false;
-        audioSource.Stop();
-        audioSource.PlayOneShot(crashSFX);
-        crashParticles.Play();
+        if (audioSource != null)
+        {
+            audioSource.Stop();
+            audioSource.PlayOneShot(crashSFX);
+        }
+        if(crashParticles != null) crashParticles.Play();
+
         GetComponent<Movement>().enabled = false;
-        Invoke("ReloadLevel", levelLoadDelay);
+        Invoke(nameof(ReloadLevel), levelLoadDelay);
     }
 
-    void LoadNextLevel()
+    private void LoadNextLevel()
     {
         int currentScene = SceneManager.GetActiveScene().buildIndex;
         int nextScene = currentScene + 1;
@@ -89,7 +104,7 @@ public class CollisionHandler : MonoBehaviour
         SceneManager.LoadScene(nextScene);
     }
 
-    void ReloadLevel()
+    private void ReloadLevel()
     {
         int currentScene = SceneManager.GetActiveScene().buildIndex;
         SceneManager.LoadScene(currentScene);
