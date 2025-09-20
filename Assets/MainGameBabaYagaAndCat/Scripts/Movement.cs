@@ -1,34 +1,109 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class Movement : MonoBehaviour
+[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(AudioSource))]
+public class Movement : MonoBehaviour, IDependency<GameStateTracker>
 {   
-    [SerializeField] InputAction thrust;
-    [SerializeField] InputAction rotation;
-    [SerializeField] float thrustStrength = 100f;
-    [SerializeField] float rotationStrength = 100f;
-    [SerializeField] AudioClip mainEngineSFX;
-    [SerializeField] ParticleSystem mainEngineParticles;
-    [SerializeField] ParticleSystem rightThrustParticles;
-    [SerializeField] ParticleSystem leftThrustParticles;
+    [SerializeField, Tooltip("Action to activate the thrust")]
+    private InputAction thrust;
 
-    Rigidbody rb;
-    AudioSource audioSource;
+    [SerializeField, Tooltip("Action for rotation")]
+    private InputAction rotation;
 
+    [SerializeField, Tooltip("Engine thrust force")]
+    private float thrustStrength = 100f;
+
+    [SerializeField, Tooltip("Rotation force")]
+    private float rotationStrength = 100f;
+
+    [SerializeField, Tooltip("Engine sound")]
+    private AudioClip mainEngineSFX;
+
+    [SerializeField, Tooltip("Main Engine Particle Effect")]
+    private ParticleSystem mainEngineParticles;
+
+    [SerializeField, Tooltip("Right Engine Particle Effect")]
+    private ParticleSystem rightThrustParticles;
+
+    [SerializeField, Tooltip("Left Engine Particle Effect")]
+    private ParticleSystem leftThrustParticles;
+
+    private Rigidbody rb;
+    private AudioSource audioSource;
+
+    private GameStateTracker gameStateTracker;
+    private bool controlsEnabled = false;
+
+    public void Construct(GameStateTracker obj)
+    {
+        gameStateTracker = obj;
+        gameStateTracker.Started += OnGameStarted;
+        gameStateTracker.Completed += OnGameCompleted;
+    }
+      
+   
     private void Start() 
     {
         rb = GetComponent<Rigidbody>();
-        audioSource = GetComponent<AudioSource>();    
+        audioSource = GetComponent<AudioSource>();
+
+        DisableControls();
+
+        if (gameStateTracker == null)
+        {
+            gameStateTracker = FindFirstObjectByType<GameStateTracker>();
+            if (gameStateTracker != null)
+            {
+                gameStateTracker.Started += OnGameStarted;
+                gameStateTracker.Completed += OnGameCompleted;
+            }
+        }
     }
 
-    private void OnEnable() 
+  
+
+    private void OnDestroy()
     {
-        thrust.Enable(); 
+        if (gameStateTracker != null)
+        {
+            gameStateTracker.Started -= OnGameStarted;
+            gameStateTracker.Completed -= OnGameCompleted;
+        }
+    }
+
+    private void OnGameStarted()
+    {
+        EnableControls();
+    }
+       
+    private void OnGameCompleted()
+    {
+        DisableControls();
+    }
+
+    private void EnableControls()
+    {
+        controlsEnabled = true;
+        thrust.Enable();
         rotation.Enable();
     }
 
+    private void DisableControls()
+    {
+        controlsEnabled = false;
+        thrust.Disable();
+        rotation.Disable();
+
+        StopThrusting();
+        StopRotating();
+    }    
+
     private void FixedUpdate()
     {
+        if (!controlsEnabled) return;
+
         ProcessThrust();
         ProcessRotation();
     }
@@ -48,11 +123,11 @@ public class Movement : MonoBehaviour
     private void StartThrusting()
     {
         rb.AddRelativeForce(Vector3.up * thrustStrength * Time.fixedDeltaTime);
-        if (!audioSource.isPlaying)
+        if (audioSource != null && !audioSource.isPlaying)
         {
             audioSource.PlayOneShot(mainEngineSFX);
         }
-        if (!mainEngineParticles.isPlaying)
+        if (mainEngineParticles != null && !mainEngineParticles.isPlaying)
         {
             mainEngineParticles.Play();
         }
@@ -67,17 +142,17 @@ public class Movement : MonoBehaviour
     private void ProcessRotation()
     {
         float rotationInput = rotation.ReadValue<float>();
-        if(rotationInput < 0)
+        if(Mathf.Approximately(rotationInput, 0))
         {
-            RotateRight();
+            StopRotating();
         }
         else if(rotationInput > 0)
         {
-            RotateLeft();
+            RotateLeft();                        
         }
         else
         {
-            StopRotating();
+            RotateRight();
         }
     }
 
